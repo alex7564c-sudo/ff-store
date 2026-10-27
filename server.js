@@ -5,57 +5,97 @@ const path = require('path');
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Apnar Bot Token ebong Chat ID ekhane boshan
-const token = '8379623803:AAGkXj3HikDkQkX1YMV7PGwH9ifwAnwJPg8';
-const chatId = '6782089696';
+const token = '8379623803:AAGkXj3HikDkQkX1YMV7PGwH9ifwAnwJPg8'; // Apnar bot token
+const chatId = '6782089696'; // Apnar chat ID
 const bot = new TelegramBot(token, { polling: true });
 
-// Store messages in memory for simplicity (Live chat history)
-let chatMessages = [];
+let users = []; // User storage ({ username, password, customId })
+let chatMessages = {}; // Store messages per customId
 
-// Buyer Payment Submit API
+// Register API (Unique 4-digit ID generation)
+app.post('/api/register', (req, res) => {
+    const { username, password } = req.body;
+    const existingUser = users.find(u => u.username === username);
+    if (existingUser) {
+        return res.json({ success: false, message: 'Username already exists!' });
+    }
+    
+    let customId;
+    do {
+        customId = Math.floor(1000 + Math.random() * 9000).toString();
+    } while (users.some(u => u.customId === customId));
+
+    users.push({ username, password, customId });
+    chatMessages[customId] = [];
+
+    res.json({ success: true, message: `Registration successful! Your ID is: ${customId}`, customId });
+});
+
+// Login API
+app.post('/api/login', (req, res) => {
+    const { username, password } = req.body;
+    const user = users.find(u => u.username === username && u.password === password);
+    if (user) {
+        res.json({ success: true, message: 'Login successful!', customId: user.customId, username: user.username });
+    } else {
+        res.json({ success: false, message: 'Invalid username or password!' });
+    }
+});
+
+// Buy API
 app.post('/api/buy', (req, res) => {
-    const { buyerNumber, cashoutNumber, trxId, selectedId } = req.body;
-    const message = `🛒 *New Buy Request!*\n\n🎮 ID: ${selectedId}\n📱 Buyer Number: ${buyerNumber}\n💸 Cashout Number: ${cashoutNumber}\n📝 TrxID: \`${trxId}\``;
-    
+    const { buyerNumber, cashoutNumber, trxId, selectedId, customId } = req.body;
+    const message = `🛒 *New Buy Request!*\n\nUser ID: \`${customId}\`\n🎮 Game ID: ${selectedId}\n📱 Buyer Number: ${buyerNumber}\n💸 Cashout Number: ${cashoutNumber}\n📝 TrxID: \`${trxId}\``;
     bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-    res.json({ success: true, message: 'Order submitted successfully!' });
+    res.json({ success: true, message: 'Order submitted successfully to RoBo!' });
 });
 
-// Seller ID Submit API
+// Sell API
 app.post('/api/sell', (req, res) => {
-    const { sellerEmail, sellerPassword, price } = req.body;
-    const message = `📤 *New ID Submission!*\n\n📧 Email: \`${sellerEmail}\`\n🔑 Password: \`${sellerPassword}\`\n💰 Asking Price: ${price} BDT`;
-    
+    const { sellerEmail, sellerPassword, price, customId } = req.body;
+    const message = `📤 *New ID Submission!*\n\nUser ID: \`${customId}\`\n📧 Email: \`${sellerEmail}\`\n🔑 Password: \`${sellerPassword}\`\n💰 Asking Price: ${price} BDT`;
     bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-    res.json({ success: true, message: 'ID submitted successfully!' });
+    res.json({ success: true, message: 'ID submitted successfully to RoBo!' });
 });
 
-// Get chat messages for website
-app.get('/api/messages', (req, res) => {
-    res.json(chatMessages);
+// Get chat messages for specific user ID
+app.get('/api/messages/:customId', (req, res) => {
+    const { customId } = req.params;
+    res.json(chatMessages[customId] || []);
 });
 
-// Send message from website to admin Telegram
+// Send message from website to RoBo (Telegram)
 app.post('/api/chat', (req, res) => {
-    const { sender, message } = req.body;
-    chatMessages.push({ sender: sender || 'User', message, time: new Date().toLocaleTimeString() });
+    const { customId, username, message } = req.body;
+    if (!chatMessages[customId]) chatMessages[customId] = [];
+
+    chatMessages[customId].push({ sender: username || 'User', message, time: new Date().toLocaleTimeString() });
     
-    const tgMessage = `💬 *New Chat Message from Website:*\n\n${message}`;
-    bot.sendMessage(chatId, tgMessage, { parse_mode: 'Markdown' });
+    // Telegram format specified by user
+    const tgMessage = `user id : ${customId}\ntext : ${message}`;
+    bot.sendMessage(chatId, tgMessage);
     
     res.json({ success: true });
 });
 
-// Listen to Telegram messages from Admin to reply back
+// Listen to Telegram messages from RoBo (Admin format: /0987 Hello)
 bot.on('message', (msg) => {
     if (msg.chat.id.toString() === chatId && msg.text) {
-        // If admin replies with text (or /reply format)
-        if (!msg.text.startsWith('/')) {
-            chatMessages.push({ sender: 'Admin', message: msg.text, time: new Date().toLocaleTimeString() });
+        const text = msg.text.trim();
+        if (text.startsWith('/')) {
+            const parts = text.split(' ');
+            const targetId = parts[0].replace('/', '');
+            const replyText = parts.slice(1).join(' ');
+
+            if (targetId && replyText) {
+                if (!chatMessages[targetId]) chatMessages[targetId] = [];
+                chatMessages[targetId].push({ sender: 'RoBo', message: replyText, time: new Date().toLocaleTimeString() });
+                bot.sendMessage(chatId, `✅ Message sent to ID ${targetId} successfully!`);
+            } else {
+                bot.sendMessage(chatId, `⚠️ Format error! Use: /ID message (e.g., /${targetId || '0987'} Hello)`);
+            }
         }
     }
 });
