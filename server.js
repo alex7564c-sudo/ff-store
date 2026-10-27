@@ -10,8 +10,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Apnar Telegram Bot Token ekhane boshaben (ba Environment Variables theke nibe)
-const token = process.env.TELEGRAM_BOT_TOKEN || 'YOUR_BOT_TOKEN_HERE';
-const chatId = process.env.TELEGRAM_CHAT_ID || 'YOUR_CHAT_ID_HERE';
+const token = process.env.TELEGRAM_BOT_TOKEN || '8379623803:AAGkXj3HikDkQkX1YMV7PGwH9ifwAnwJPg8';
+const chatId = process.env.TELEGRAM_CHAT_ID || '6782089696';
 const bot = new TelegramBot(token, { polling: true });
 
 // Buyer Payment Submit API
