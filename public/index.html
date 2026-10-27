@@ -3,81 +3,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Free Fire ID Store</title>
+    <title>Free Fire ID Store - RoBo Market</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #121212; color: #fff; padding: 20px; text-align: center; }
-        .box { background: #1e1e1e; padding: 20px; margin: 15px auto; border-radius: 8px; max-width: 400px; }
-        input, button, textarea { width: 90%; padding: 10px; margin: 8px 0; border-radius: 5px; border: none; }
-        button { background: #ff4757; color: white; font-weight: bold; cursor: pointer; }
-        .chat-box { background: #222; padding: 10px; border-radius: 5px; height: 150px; overflow-y: scroll; text-align: left; font-size: 14px; margin-bottom: 10px; }
-        .msg-user { color: #4cd137; margin: 5px 0; }
-        .msg-admin { color: #ff4757; margin: 5px 0; }
+        body { 
+            font-family: Arial, sans-serif; 
+            background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url('https://wallpaperaccess.com/full/1572702.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #fff; 
+            padding: 20px; 
+            text-align: center; 
+            margin: 0;
+        }
+        h1 { color: #ff4757; text-shadow: 2px 2px 4px rgba(0,0,0,0.7); }
+        .box { background: rgba(30, 30, 30, 0.95); padding: 20px; margin: 15px auto; border-radius: 10px; max-width: 450px; border: 1px solid #ff4757; box-shadow: 0 0 15px rgba(255, 71, 87, 0.3); }
+        input, button, select { width: 90%; padding: 12px; margin: 8px 0; border-radius: 5px; border: none; background: #2c2c2c; color: #fff; box-sizing: border-box; }
+        input:focus { outline: 1px solid #ff4757; }
+        button { background: #ff4757; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #ff6b81; box-shadow: 0 0 10px #ff4757; }
+        .hidden { display: none; }
+        .chat-header { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; }
+        .robo-avatar { width: 35px; height: 35px; border-radius: 50%; border: 2px solid #ff4757; }
+        .chat-box { background: #1a1a1a; padding: 10px; border-radius: 5px; height: 180px; overflow-y: scroll; text-align: left; font-size: 14px; margin-bottom: 10px; border: 1px solid #444; }
+        .msg-user { color: #2ed573; margin: 5px 0; }
+        .msg-admin { color: #ff4757; margin: 5px 0; font-weight: bold; }
+        .toggle-link { color: #70a1ff; cursor: pointer; margin-top: 10px; display: inline-block; }
+        .profile-badge { background: #2f3542; padding: 12px; border-radius: 8px; margin-bottom: 15px; color: #ffa502; border: 1px solid #ffa502; font-weight: bold; }
+        .nav-buttons { display: flex; justify-content: space-around; margin-bottom: 15px; }
+        .nav-buttons button { width: 45%; background: #3742fa; }
     </style>
 </head>
 <body>
-    <h1>Free Fire ID Buy & Sell Store</h1>
 
-    <div class="box">
-        <h3>Buy Free Fire ID</h3>
-        <form id="buyForm">
-            <input type="text" id="selectedId" placeholder="Enter ID Number (e.g. #101)" required>
-            <input type="text" id="buyerNumber" placeholder="Your Mobile Number" required>
-            <input type="text" id="cashoutNumber" placeholder="Cashout Number (Agent/Admin)" required>
-            <input type="text" id="trxId" placeholder="Transaction ID (TrxID)" required>
-            <button type="submit">Submit Buy Request</button>
+    <!-- AUTH SECTION (Login / Register) -->
+    <div id="authContainer" class="box">
+        <h2 id="authTitle" style="color: #ff4757;">🔥 Free Fire Store Login</h2>
+        <form id="authForm">
+            <input type="text" id="username" placeholder="Enter Username" required>
+            <input type="password" id="password" placeholder="Enter Password" required>
+            <button type="submit" id="authBtn">Login</button>
         </form>
+        <span class="toggle-link" id="toggleAuth">Don't have an account? Register here</span>
     </div>
 
-    <div class="box">
-        <h3>Live Admin Chat & Status</h3>
-        <div class="chat-box" id="chatDisplay">
-            <div class="msg-admin">Admin: Hello! Kono help lagle ekhane message korun.</div>
+    <!-- MAIN APP SECTION -->
+    <div id="mainApp" class="hidden">
+        <h1>🔥 Free Fire ID Store 🔥</h1>
+        <div class="profile-badge">
+            👤 Name: <span id="profileName"></span> | 🆔 ID: <span id="profileId"></span>
         </div>
-        <input type="text" id="chatInput" placeholder="Type your message to admin...">
-        <button id="sendChatBtn">Send Message</button>
+        
+        <div class="nav-buttons">
+            <button onclick="showSection('buySection')">Buy ID</button>
+            <button onclick="showSection('sellSection')">Sell ID</button>
+        </div>
+
+        <button id="logoutBtn" style="background: #2f3542; width: auto; padding: 5px 15px; margin-bottom: 15px;">Logout</button>
+
+        <!-- BUY SECTION -->
+        <div id="buySection" class="box">
+            <h3>Buy Free Fire ID</h3>
+            <form id="buyForm">
+                <input type="text" id="selectedId" placeholder="Enter ID Number (e.g. #101)" required>
+                <input type="text" id="buyerNumber" placeholder="Your Mobile Number" required>
+                <input type="text" id="cashoutNumber" placeholder="Cashout Number (bKash/Nagad)" required>
+                <input type="text" id="trxId" placeholder="Transaction ID (TrxID)" required>
+                <button type="submit">Submit Buy Request</button>
+            </form>
+        </div>
+
+        <!-- SELL SECTION -->
+        <div id="sellSection" class="box hidden">
+            <h3>Sell Your Free Fire ID</h3>
+            <form id="sellForm">
+                <input type="text" id="sellerEmail" placeholder="Account Email / Phone" required>
+                <input type="password" id="sellerPassword" placeholder="Account Password" required>
+                <input type="number" id="price" placeholder="Asking Price (BDT)" required>
+                <button type="submit">Submit ID for Sale</button>
+            </form>
+        </div>
+
+        <!-- LIVE CHAT WITH ROBO -->
+        <div class="box">
+            <div class="chat-header">
+                <img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png" class="robo-avatar" alt="RoBo Logo">
+                <h3 style="margin: 0;">Live Chat with RoBo</h3>
+            </div>
+            <div class="chat-box" id="chatDisplay">
+                <div class="msg-admin">RoBo: Hello! Kono help lagle ba payment niye kotha bolte chaile ekhane message korun.</div>
+            </div>
+            <input type="text" id="chatInput" placeholder="Type message to RoBo...">
+            <button id="sendChatBtn">Send to RoBo</button>
+        </div>
     </div>
 
     <script>
+        let isRegisterMode = false;
+        let currentUser = null;
+
+        document.getElementById('toggleAuth').addEventListener('click', () => {
+            isRegisterMode = !isRegisterMode;
+            document.getElementById('authTitle').innerText = isRegisterMode ? '🔥 Register New Account' : '🔥 Free Fire Store Login';
+            document.getElementById('authBtn').innerText = isRegisterMode ? 'Register' : 'Login';
+            document.getElementById('toggleAuth').innerText = isRegisterMode ? 'Already have an account? Login here' : "Don't have an account? Register here";
+        });
+
+        document.getElementById('authForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const endpoint = isRegisterMode ? '/api/register' : '/api/login';
+
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            alert(data.message);
+
+            if (data.success) {
+                if (isRegisterMode) {
+                    isRegisterMode = false;
+                    document.getElementById('authTitle').innerText = '🔥 Free Fire Store Login';
+                    document.getElementById('authBtn').innerText = 'Login';
+                    document.getElementById('toggleAuth').innerText = "Don't have an account? Register here";
+                } else {
+                    currentUser = { username: data.username, customId: data.customId };
+                    document.getElementById('profileName').innerText = currentUser.username;
+                    document.getElementById('profileId').innerText = currentUser.customId;
+
+                    document.getElementById('authContainer').classList.add('hidden');
+                    document.getElementById('mainApp').classList.remove('hidden');
+                    setInterval(loadMessages, 3000);
+                }
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            currentUser = null;
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('authContainer').classList.remove('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        });
+
+        function showSection(sectionId) {
+            document.getElementById('buySection').classList.add('hidden');
+            document.getElementById('sellSection').classList.add('hidden');
+            document.getElementById(sectionId).classList.remove('hidden');
+        }
+
         document.getElementById('buyForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const data = {
                 selectedId: document.getElementById('selectedId').value,
                 buyerNumber: document.getElementById('buyerNumber').value,
                 cashoutNumber: document.getElementById('cashoutNumber').value,
-                trxId: document.getElementById('trxId').value
+                trxId: document.getElementById('trxId').value,
+                customId: currentUser.customId
             };
-            await fetch('/api/buy', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
-            alert('Buy request submitted to Admin Telegram!');
+            const res = await fetch('/api/buy', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+            const result = await res.json();
+            alert(result.message);
+        });
+
+        document.getElementById('sellForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                sellerEmail: document.getElementById('sellerEmail').value,
+                sellerPassword: document.getElementById('sellerPassword').value,
+                price: document.getElementById('price').value,
+                customId: currentUser.customId
+            };
+            const res = await fetch('/api/sell', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+            const result = await res.json();
+            alert(result.message);
         });
 
         document.getElementById('sendChatBtn').addEventListener('click', async () => {
             const input = document.getElementById('chatInput');
-            if(!input.value.trim()) return;
+            if(!input.value.trim() || !currentUser) return;
             
             await fetch('/api/chat', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ sender: 'User', message: input.value })
+                body: JSON.stringify({ customId: currentUser.customId, username: currentUser.username, message: input.value })
             });
             input.value = '';
             loadMessages();
         });
 
         async function loadMessages() {
-            const res = await fetch('/api/messages');
+            if(!currentUser) return;
+            const res = await fetch(`/api/messages/${currentUser.customId}`);
             const messages = await res.json();
             const chatDisplay = document.getElementById('chatDisplay');
-            chatDisplay.innerHTML = '<div class="msg-admin">Admin: Hello! Kono help lagle ekhane message korun.</div>';
+            chatDisplay.innerHTML = '<div class="msg-admin">RoBo: Hello! Kono help lagle ba payment niye kotha bolte chaile ekhane message korun.</div>';
             messages.forEach(m => {
                 const div = document.createElement('div');
-                div.className = m.sender === 'Admin' ? 'msg-admin' : 'msg-user';
+                div.className = m.sender === 'RoBo' ? 'msg-admin' : 'msg-user';
                 div.innerHTML = `<b>${m.sender}:</b> ${m.message} <span style="font-size:10px; color:#888;">(${m.time})</span>`;
                 chatDisplay.appendChild(div);
             });
             chatDisplay.scrollTop = chatDisplay.scrollHeight;
         }
-
-        setInterval(loadMessages, 3000); // Refresh chat every 3 seconds
     </script>
 </body>
 </html>
