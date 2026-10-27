@@ -7,8 +7,11 @@
     <style>
         body { font-family: Arial, sans-serif; background: #121212; color: #fff; padding: 20px; text-align: center; }
         .box { background: #1e1e1e; padding: 20px; margin: 15px auto; border-radius: 8px; max-width: 400px; }
-        input, button { width: 90%; padding: 10px; margin: 8px 0; border-radius: 5px; border: none; }
+        input, button, textarea { width: 90%; padding: 10px; margin: 8px 0; border-radius: 5px; border: none; }
         button { background: #ff4757; color: white; font-weight: bold; cursor: pointer; }
+        .chat-box { background: #222; padding: 10px; border-radius: 5px; height: 150px; overflow-y: scroll; text-align: left; font-size: 14px; margin-bottom: 10px; }
+        .msg-user { color: #4cd137; margin: 5px 0; }
+        .msg-admin { color: #ff4757; margin: 5px 0; }
     </style>
 </head>
 <body>
@@ -26,13 +29,12 @@
     </div>
 
     <div class="box">
-        <h3>Sell Your ID</h3>
-        <form id="sellForm">
-            <input type="email" id="sellerEmail" placeholder="FF Account Email" required>
-            <input type="text" id="sellerPassword" placeholder="FF Account Password" required>
-            <input type="number" id="price" placeholder="Asking Price (BDT)" required>
-            <button type="submit">Submit ID for Sale</button>
-        </form>
+        <h3>Live Admin Chat & Status</h3>
+        <div class="chat-box" id="chatDisplay">
+            <div class="msg-admin">Admin: Hello! Kono help lagle ekhane message korun.</div>
+        </div>
+        <input type="text" id="chatInput" placeholder="Type your message to admin...">
+        <button id="sendChatBtn">Send Message</button>
     </div>
 
     <script>
@@ -44,20 +46,38 @@
                 cashoutNumber: document.getElementById('cashoutNumber').value,
                 trxId: document.getElementById('trxId').value
             };
-            const res = await fetch('/api/buy', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+            await fetch('/api/buy', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
             alert('Buy request submitted to Admin Telegram!');
         });
 
-        document.getElementById('sellForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = {
-                sellerEmail: document.getElementById('sellerEmail').value,
-                sellerPassword: document.getElementById('sellerPassword').value,
-                price: document.getElementById('price').value
-            };
-            const res = await fetch('/api/sell', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
-            alert('ID submitted to Admin Telegram securely!');
+        document.getElementById('sendChatBtn').addEventListener('click', async () => {
+            const input = document.getElementById('chatInput');
+            if(!input.value.trim()) return;
+            
+            await fetch('/api/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ sender: 'User', message: input.value })
+            });
+            input.value = '';
+            loadMessages();
         });
+
+        async function loadMessages() {
+            const res = await fetch('/api/messages');
+            const messages = await res.json();
+            const chatDisplay = document.getElementById('chatDisplay');
+            chatDisplay.innerHTML = '<div class="msg-admin">Admin: Hello! Kono help lagle ekhane message korun.</div>';
+            messages.forEach(m => {
+                const div = document.createElement('div');
+                div.className = m.sender === 'Admin' ? 'msg-admin' : 'msg-user';
+                div.innerHTML = `<b>${m.sender}:</b> ${m.message} <span style="font-size:10px; color:#888;">(${m.time})</span>`;
+                chatDisplay.appendChild(div);
+            });
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+        }
+
+        setInterval(loadMessages, 3000); // Refresh chat every 3 seconds
     </script>
 </body>
 </html>
