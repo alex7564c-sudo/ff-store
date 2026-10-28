@@ -115,12 +115,6 @@
 
         button:hover { transform: translateY(-2px); }
 
-        .social-login { margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; }
-        .social-icons { display: flex; justify-content: center; gap: 15px; margin-top: 8px; }
-        .social-btn { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; background: #1e2532; border: 1px solid #333; cursor: pointer; }
-        .social-btn.google:hover { background: #ea4335; color: #fff; }
-        .social-btn.facebook:hover { background: #1877f2; color: #fff; }
-
         .rules-box { font-size: 11px; color: #aaa; margin-top: 10px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; }
         .hidden { display: none !important; }
 
@@ -209,7 +203,7 @@
             <div id="regFields" class="hidden">
                 <div class="phone-group">
                     <div class="phone-prefix">🇧🇩 +880</div>
-                    <input type="text" id="phone" placeholder="17xxxxxxxx" maxlength="10">
+                    <input type="text" id="phone" placeholder="17xxxxxxxx বা 017xxxxxxxx" maxlength="11">
                 </div>
             </div>
 
@@ -230,7 +224,7 @@
         </p>
 
         <div class="rules-box">
-            🛡️ <b>সিকিউরিটি:</b> সঠিক ইউজারনেম ও ১১ ডিজিটের বাংলাদেশি নাম্বার দিয়ে একাউন্ট করুন। ৩ দিন পর নিষ্ক্রিয় একাউন্ট স্বয়ংক্রিয়ভাবে মুছে যায়।
+            🛡️ <b>সিকিউরিটি:</b> সঠিক ইউজারনেম ও বাংলাদেশি নাম্বার দিয়ে একাউন্ট করুন। ৩ দিন পর নিষ্ক্রিয় একাউন্ট স্বয়ংক্রিয়ভাবে মুছে যায়।
         </div>
     </div>
 
@@ -365,7 +359,6 @@
             });
         }
 
-        // INSTANT BUY CLICK
         async function instantBuy(productId, productTitle, productPrice) {
             if (!currentUser) return;
             document.getElementById('chatPopup').style.display = 'block';
@@ -383,7 +376,6 @@
             loadMessages();
         }
 
-        // INSTANT SELL CLICK
         async function instantSell() {
             if (!currentUser) return;
             document.getElementById('chatPopup').style.display = 'block';
