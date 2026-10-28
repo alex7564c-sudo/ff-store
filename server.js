@@ -18,7 +18,6 @@ const USERS_FILE = path.join(__dirname, 'users.json');
 const PRODUCTS_FILE = path.join(__dirname, 'products.json');
 const CHATS_FILE = path.join(__dirname, 'chats.json');
 
-// Helper Functions to Load/Save JSON Data
 function loadData(filePath, defaultVal) {
     if (fs.existsSync(filePath)) {
         try {
@@ -38,7 +37,7 @@ let users = loadData(USERS_FILE, []);
 let products = loadData(PRODUCTS_FILE, []);
 let chatMessages = loadData(CHATS_FILE, {});
 
-// Auto Cleanup Routine (Deletes accounts & chats older than 3 days)
+// Auto Cleanup Routine (3 Days Expiry)
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 setInterval(() => {
     const now = Date.now();
@@ -54,11 +53,9 @@ setInterval(() => {
         saveData(USERS_FILE, users);
         saveData(CHATS_FILE, chatMessages);
     }
-}, 60 * 60 * 1000); // Check every hour
+}, 60 * 60 * 1000);
 
-/* =========================================
-   USER AUTHENTICATION API
-   ========================================= */
+/* ================= AUTHENTICATION ================= */
 
 app.post('/api/register', (req, res) => {
     const { fullName, username, phone, password } = req.body;
@@ -77,28 +74,14 @@ app.post('/api/register', (req, res) => {
         customId = Math.floor(1000 + Math.random() * 9000).toString();
     } while (users.some(u => u.customId === customId));
 
-    const newUser = {
-        fullName,
-        username,
-        phone,
-        password,
-        customId,
-        createdAt: Date.now()
-    };
-
+    const newUser = { fullName, username, phone, password, customId, createdAt: Date.now() };
     users.push(newUser);
     chatMessages[customId] = [];
 
     saveData(USERS_FILE, users);
     saveData(CHATS_FILE, chatMessages);
 
-    res.json({
-        success: true,
-        message: `রেজিস্ট্রেশন সফল হয়েছে! আপনার অনন্য আইডি: ${customId}`,
-        customId,
-        username,
-        fullName
-    });
+    res.json({ success: true, message: `রেজিস্ট্রেশন সফল! আইডি: ${customId}`, customId, username, fullName });
 });
 
 app.post('/api/login', (req, res) => {
@@ -106,21 +89,13 @@ app.post('/api/login', (req, res) => {
     const user = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
     
     if (user) {
-        res.json({
-            success: true,
-            message: 'লগইন সফল হয়েছে!',
-            customId: user.customId,
-            username: user.username,
-            fullName: user.fullName
-        });
+        res.json({ success: true, message: 'লগইন সফল!', customId: user.customId, username: user.username, fullName: user.fullName });
     } else {
-        res.json({ success: false, message: 'ইউজারনেম অথবা পাসওয়ার্ড ভুল হয়েছে!' });
+        res.json({ success: false, message: 'ইউজারনেম অথবা পাসওয়ার্ড ভুল!' });
     }
 });
 
-/* =========================================
-   MARKETPLACE & PRODUCTS API
-   ========================================= */
+/* ================= PRODUCTS & BUY/SELL API ================= */
 
 app.get('/api/products', (req, res) => {
     res.json(products);
@@ -143,14 +118,12 @@ app.post('/api/sell', (req, res) => {
     const nameStr = user ? user.fullName : 'N/A';
     const usernameStr = user ? user.username : 'N/A';
 
-    const message = `📤 *New ID Sale Submission!*\n\nName : ${nameStr}\nUsername : ${usernameStr}\nUser ID : ${customId}\n📧 Account Email/Phone : \`${sellerEmail}\`\n🔑 Password : \`${sellerPassword}\`\n💰 Asking Price : ${price} BDT`;
+    const message = `📤 *New ID Sale Submission via Chat!*\n\nName : ${nameStr}\nUsername : ${usernameStr}\nUser ID : ${customId}\n📧 Account Info : \`${sellerEmail}\`\n🔑 Password : \`${sellerPassword}\`\n💰 Asking Price : ${price} BDT`;
     bot.sendMessage(chatId, message);
-    res.json({ success: true, message: 'আপনার বিক্রি করার অনুরোধটি Robot এর কাছে সফলভাবে পাঠানো হয়েছে!' });
+    res.json({ success: true, message: 'আপনার আইডি বিক্রির তথ্য Robot এর কাছে সফলভাবে পাঠানো হয়েছে!' });
 });
 
-/* =========================================
-   LIVE CHAT SYSTEM API
-   ========================================= */
+/* ================= CHAT API ================= */
 
 app.get('/api/messages/:customId', (req, res) => {
     const { customId } = req.params;
@@ -174,9 +147,7 @@ app.post('/api/chat', (req, res) => {
     res.json({ success: true });
 });
 
-/* =========================================
-   TELEGRAM BOT CONTROLLER (CMS & ADMIN REPLIES)
-   ========================================= */
+/* ================= TELEGRAM BOT ADMIN COMMANDS ================= */
 
 bot.on('message', async (msg) => {
     if (msg.chat.id.toString() !== chatId) return;
@@ -184,7 +155,6 @@ bot.on('message', async (msg) => {
     const text = msg.text ? msg.text.trim() : '';
     const caption = msg.caption ? msg.caption.trim() : '';
 
-    // 1. Add Product via Photo Upload with Caption (/add ID: Title | Price: 1000 BDT)
     if (msg.photo && caption.startsWith('/add')) {
         const fileId = msg.photo[msg.photo.length - 1].file_id;
         const imageUrl = await bot.getFileLink(fileId);
@@ -208,54 +178,49 @@ bot.on('message', async (msg) => {
 
         products.unshift(newProd);
         saveData(PRODUCTS_FILE, products);
-
-        bot.sendMessage(chatId, `✅ *Product Added Successfully!*\n\n🏷️ *ID:* ${newProd.title}\n💰 *Price:* ${newProd.price}\n🔢 *Code:* \`${newProd.id}\``, { parse_mode: 'Markdown' });
+        bot.sendMessage(chatId, `✅ *Product Added!*\n🏷️ ${newProd.title}\n💰 ${newProd.price}\n🔢 Code: \`${newProd.id}\``, { parse_mode: 'Markdown' });
         return;
     }
 
-    // 2. Command: /sold <title_or_code>
     if (text.startsWith('/sold')) {
         const query = text.replace('/sold', '').trim().toLowerCase();
         const prod = products.find(p => p.id.toLowerCase() === query || p.title.toLowerCase().includes(query));
         if (prod) {
             prod.status = 'SOLD OUT';
             saveData(PRODUCTS_FILE, products);
-            bot.sendMessage(chatId, `❌ Product Marked as *SOLD OUT*: ${prod.title}`, { parse_mode: 'Markdown' });
+            bot.sendMessage(chatId, `❌ Marked SOLD OUT: ${prod.title}`);
         } else {
-            bot.sendMessage(chatId, `⚠️ Product not found matching "${query}"`);
+            bot.sendMessage(chatId, `⚠️ Product not found!`);
         }
         return;
     }
 
-    // 3. Command: /delete <title_or_code>
     if (text.startsWith('/delete')) {
         const query = text.replace('/delete', '').trim().toLowerCase();
         const initialLen = products.length;
         products = products.filter(p => p.id.toLowerCase() !== query && !p.title.toLowerCase().includes(query));
         if (products.length < initialLen) {
             saveData(PRODUCTS_FILE, products);
-            bot.sendMessage(chatId, `🗑️ Product deleted matching "${query}"`);
+            bot.sendMessage(chatId, `🗑️ Product deleted.`);
         } else {
-            bot.sendMessage(chatId, `⚠️ Product not found matching "${query}"`);
+            bot.sendMessage(chatId, `⚠️ Product not found!`);
         }
         return;
     }
 
-    // 4. Command: /stock
     if (text === '/stock') {
         if (products.length === 0) {
-            bot.sendMessage(chatId, `📦 Stock is currently empty.`);
+            bot.sendMessage(chatId, `📦 Stock is empty.`);
             return;
         }
-        let listStr = `📦 *Current Stock List (${products.length} Items):*\n\n`;
+        let listStr = `📦 *Stock List (${products.length}):*\n\n`;
         products.forEach((p, idx) => {
-            listStr += `${idx + 1}. *${p.title}* (${p.price}) - \`${p.status}\` | Code: \`${p.id}\`\n`;
+            listStr += `${idx + 1}. *${p.title}* (${p.price}) - \`${p.status}\` [${p.id}]\n`;
         });
         bot.sendMessage(chatId, listStr, { parse_mode: 'Markdown' });
         return;
     }
 
-    // 5. Admin Reply to Live Chat (Format: /0987 Hello)
     if (text.startsWith('/')) {
         const parts = text.split(' ');
         const targetId = parts[0].replace('/', '');
@@ -265,9 +230,9 @@ bot.on('message', async (msg) => {
             if (!chatMessages[targetId]) chatMessages[targetId] = [];
             chatMessages[targetId].push({ sender: 'Robot', message: replyText, time: new Date().toLocaleTimeString() });
             saveData(CHATS_FILE, chatMessages);
-            bot.sendMessage(chatId, `✅ Message delivered to User ID \`${targetId}\`!`, { parse_mode: 'Markdown' });
+            bot.sendMessage(chatId, `✅ Reply sent to ID \`${targetId}\`!`, { parse_mode: 'Markdown' });
         } else {
-            bot.sendMessage(chatId, `⚠️ Format Error! Use: \`/ID message\` (e.g., \`/0987 Hello\`)`, { parse_mode: 'Markdown' });
+            bot.sendMessage(chatId, `⚠️ Error! Use: \`/ID message\``);
         }
     }
 });
