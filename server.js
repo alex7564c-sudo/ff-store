@@ -99,20 +99,28 @@ app.get('/api/products', (req, res) => {
 
 app.post('/api/buy', (req, res) => {
     const { buyerNumber, cashoutNumber, trxId, selectedId, customId } = req.body;
-    const message = `🛒 *New Buy Request!*\n\nUser ID: \`${customId}\`\n🎮 Selected ID: ${selectedId}\n📱 Buyer Phone: ${buyerNumber}\n💸 Cashout Phone: ${cashoutNumber}\n📝 TrxID: \`${trxId}\``;
-    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+    const user = users.find(u => u.customId === customId);
+    const nameStr = user ? user.fullName : 'N/A';
+    const usernameStr = user ? user.username : 'N/A';
+
+    const message = `🛒 *New Buy Request!*\n\nName : ${nameStr}\nUsername : ${usernameStr}\nUser ID : ${customId}\n🎮 Selected ID : ${selectedId}\n📱 Buyer Phone : ${buyerNumber}\n💸 Cashout Phone : ${cashoutNumber}\n📝 TrxID : \`${trxId}\``;
+    bot.sendMessage(chatId, message);
     res.json({ success: true, message: 'আপনার কেনার অনুরোধটি Robot এর কাছে জমা হয়েছে!' });
 });
 
 app.post('/api/sell', (req, res) => {
     const { sellerEmail, sellerPassword, price, customId } = req.body;
-    const message = `📤 *New ID Sale Submission!*\n\nUser ID: \`${customId}\`\n📧 Account Email/Phone: \`${sellerEmail}\`\n🔑 Password: \`${sellerPassword}\`\n💰 Asking Price: ${price} BDT`;
-    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+    const user = users.find(u => u.customId === customId);
+    const nameStr = user ? user.fullName : 'N/A';
+    const usernameStr = user ? user.username : 'N/A';
+
+    const message = `📤 *New ID Sale Submission!*\n\nName : ${nameStr}\nUsername : ${usernameStr}\nUser ID : ${customId}\n📧 Account Email/Phone : \`${sellerEmail}\`\n🔑 Password : \`${sellerPassword}\`\n💰 Asking Price : ${price} BDT`;
+    bot.sendMessage(chatId, message);
     res.json({ success: true, message: 'আপনার বিক্রি করার অনুরোধটি Robot এর কাছে সফলভাবে পাঠানো হয়েছে!' });
 });
 
 /* =========================================
-   LIVE CHAT SYSTEM API
+   LIVE CHAT SYSTEM API (UPDATED TELEGRAM FORMAT)
    ========================================= */
 
 app.get('/api/messages/:customId', (req, res) => {
@@ -124,9 +132,15 @@ app.post('/api/chat', (req, res) => {
     const { customId, username, message } = req.body;
     if (!chatMessages[customId]) chatMessages[customId] = [];
 
-    chatMessages[customId].push({ sender: username || 'User', message, time: new Date().toLocaleTimeString() });
+    // Find full user details from memory
+    const user = users.find(u => u.customId === customId);
+    const fullName = user ? user.fullName : (username || 'User');
+    const uName = user ? user.username : (username || 'N/A');
 
-    const tgMessage = `user id : ${customId}\ntext : ${message}`;
+    chatMessages[customId].push({ sender: fullName, message, time: new Date().toLocaleTimeString() });
+
+    // Telegram Notification Format as requested
+    const tgMessage = `Name : ${fullName}\nUsername : ${uName}\nUser ID : ${customId}\nText : ${message}`;
     bot.sendMessage(chatId, tgMessage);
 
     res.json({ success: true });
@@ -142,7 +156,7 @@ bot.on('message', async (msg) => {
     const text = msg.text ? msg.text.trim() : '';
     const caption = msg.caption ? msg.caption.trim() : '';
 
-    // 1. Add Product via Photo/Video Upload with Caption (e.g., /add ID: Cobra Max | Price: 2500 BDT)
+    // 1. Add Product via Photo Upload with Caption (/add ID: Title | Price: 1000 BDT)
     if (msg.photo && caption.startsWith('/add')) {
         const fileId = msg.photo[msg.photo.length - 1].file_id;
         const imageUrl = await bot.getFileLink(fileId);
