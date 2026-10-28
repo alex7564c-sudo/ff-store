@@ -95,32 +95,46 @@ app.post('/api/login', (req, res) => {
     }
 });
 
-/* ================= PRODUCTS & BUY/SELL API ================= */
+/* ================= PRODUCTS & AUTO ACTIONS API ================= */
 
 app.get('/api/products', (req, res) => {
     res.json(products);
 });
 
-app.post('/api/buy', (req, res) => {
-    const { buyerNumber, cashoutNumber, trxId, selectedId, customId } = req.body;
+// Auto Buy Click
+app.post('/api/autobuy', (req, res) => {
+    const { productId, productTitle, productPrice, customId } = req.body;
     const user = users.find(u => u.customId === customId);
     const nameStr = user ? user.fullName : 'N/A';
     const usernameStr = user ? user.username : 'N/A';
 
-    const message = `🛒 *New Buy Request!*\n\nName : ${nameStr}\nUsername : ${usernameStr}\nUser ID : ${customId}\n🎮 Selected ID : ${selectedId}\n📱 Buyer Phone : ${buyerNumber}\n💸 Cashout Phone : ${cashoutNumber}\n📝 TrxID : \`${trxId}\``;
-    bot.sendMessage(chatId, message);
-    res.json({ success: true, message: 'আপনার কেনার অনুরোধটি Robot এর কাছে জমা হয়েছে!' });
+    const message = `🛒 *Instant Buy Clicked!*\n\nName : ${nameStr}\nUsername : ${usernameStr}\nUser ID : ${customId}\n🎮 Item : ${productTitle}\n💰 Price : ${productPrice}\n🔢 Code : \`${productId}\``;
+    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+
+    if (!chatMessages[customId]) chatMessages[customId] = [];
+    const autoBotMsg = `Robot: আপনার অর্ডার রিকোয়েস্ট (${productTitle} - ${productPrice}) সফলভাবে রিসিভ করা হয়েছে! পেমেন্ট ও অন্যান্য বিষয়ে এখন সরাসরি চ্যাটে কথা বলুন।`;
+    chatMessages[customId].push({ sender: 'Robot', message: autoBotMsg, time: new Date().toLocaleTimeString() });
+    saveData(CHATS_FILE, chatMessages);
+
+    res.json({ success: true, message: 'Order sent!' });
 });
 
-app.post('/api/sell', (req, res) => {
-    const { sellerEmail, sellerPassword, price, customId } = req.body;
+// Auto Sell Click (Just like Buy, instant Telegram notification & Chat open)
+app.post('/api/autosell', (req, res) => {
+    const { customId } = req.body;
     const user = users.find(u => u.customId === customId);
     const nameStr = user ? user.fullName : 'N/A';
     const usernameStr = user ? user.username : 'N/A';
 
-    const message = `📤 *New ID Sale Submission via Chat!*\n\nName : ${nameStr}\nUsername : ${usernameStr}\nUser ID : ${customId}\n📧 Account Info : \`${sellerEmail}\`\n🔑 Password : \`${sellerPassword}\`\n💰 Asking Price : ${price} BDT`;
-    bot.sendMessage(chatId, message);
-    res.json({ success: true, message: 'আপনার আইডি বিক্রির তথ্য Robot এর কাছে সফলভাবে পাঠানো হয়েছে!' });
+    const message = `📤 *New ID Sell Request Clicked!*\n\nName : ${nameStr}\nUsername : ${usernameStr}\nUser ID : ${customId}\n📝 Status : User wants to sell an account. Chat opened!`;
+    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+
+    if (!chatMessages[customId]) chatMessages[customId] = [];
+    const autoBotMsg = `Robot: আপনার আইডি বিক্রির রিকোয়েস্ট অ্যাডমিনের কাছে পাঠানো হয়েছে! এখন এই চ্যাটেই আপনার আইডির ডিটেইলস (Gmail, Password, Price) দিন।`;
+    chatMessages[customId].push({ sender: 'Robot', message: autoBotMsg, time: new Date().toLocaleTimeString() });
+    saveData(CHATS_FILE, chatMessages);
+
+    res.json({ success: true, message: 'Sell request sent!' });
 });
 
 /* ================= CHAT API ================= */
