@@ -55,25 +55,36 @@ setInterval(() => {
     }
 }, 60 * 60 * 1000);
 
-/* ================= AUTHENTICATION & VALIDATION ================= */
+/* ================= AUTHENTICATION & FLEXIBLE PHONE VALIDATION ================= */
 
 app.post('/api/register', (req, res) => {
-    const { username, phone, password } = req.body;
+    let { username, phone, password } = req.body;
     
     if (!username || !phone || !password) {
         return res.json({ success: false, message: 'সবগুলো তথ্য সঠিকভাবে পূরণ করুন!' });
     }
 
-    // Username Validation: Alphanumeric only (No special chars/spaces)
+    // Username Validation: Alphanumeric only
     const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
     if (!usernameRegex.test(username)) {
-        return res.json({ success: false, message: 'ইউজারনেমে শুধু ইংরেজি অক্ষর ও সংখ্যা ব্যবহার করুন (স্পেশাল ক্যারেক্টার বা হ্যাশ/ড্যাশ গ্রহণযোগ্য নয়)!' });
+        return res.json({ success: false, message: 'ইউজারনেমে শুধু ইংরেজি অক্ষর ও সংখ্যা ব্যবহার করুন!' });
     }
 
-    // Bangladeshi Phone Validation: Must start with 01 and be exactly 11 digits
-    const phoneRegex = /^01[3-9]\d{8}$/;
-    if (!phoneRegex.test(phone)) {
-        return res.json({ success: false, message: 'সঠিক ১১ ডিজিটের বাংলাদেশি মোবাইল নম্বর দিন (যেমন: 017xxxxxxxx)!' });
+    // Clean phone input (remove spaces/dashes if any)
+    phone = phone.trim();
+
+    // Flexible Bangladeshi Phone Validation:
+    // Accepts either 10 digits starting with '1' (e.g. 17xxxxxxxx) or 11 digits starting with '01' (e.g. 017xxxxxxxx)
+    const phoneRegex10 = /^1[3-9]\d{8}$/; // 10 digits starting with 1
+    const phoneRegex11 = /^01[3-9]\d{8}$/; // 11 digits starting with 01
+
+    let formattedPhone = '';
+    if (phoneRegex10.test(phone)) {
+        formattedPhone = '+880' + phone; // Automatically adds 0 if typed without 0
+    } else if (phoneRegex11.test(phone)) {
+        formattedPhone = '+88' + phone; // Keeps full number with 0
+    } else {
+        return res.json({ success: false, message: 'সঠিক বাংলাদেশি মোবাইল নম্বর দিন (যেমন: 17xxxxxxxx অথবা 017xxxxxxxx)!' });
     }
 
     const existingUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
@@ -86,8 +97,7 @@ app.post('/api/register', (req, res) => {
         customId = Math.floor(1000 + Math.random() * 9000).toString();
     } while (users.some(u => u.customId === customId));
 
-    const fullPhone = '+880' + phone;
-    const newUser = { username, phone: fullPhone, password, customId, createdAt: Date.now() };
+    const newUser = { username, phone: formattedPhone, password, customId, createdAt: Date.now() };
     users.push(newUser);
     chatMessages[customId] = [];
 
@@ -114,7 +124,6 @@ app.get('/api/products', (req, res) => {
     res.json(products);
 });
 
-// Instant Buy Click
 app.post('/api/autobuy', (req, res) => {
     const { productId, productTitle, productPrice, customId } = req.body;
     const user = users.find(u => u.customId === customId);
@@ -131,7 +140,6 @@ app.post('/api/autobuy', (req, res) => {
     res.json({ success: true, message: 'Order sent!' });
 });
 
-// Instant Sell Click
 app.post('/api/autosell', (req, res) => {
     const { customId } = req.body;
     const user = users.find(u => u.customId === customId);
