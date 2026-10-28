@@ -67,6 +67,37 @@
 
         input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 8px var(--primary-glow); }
 
+        .phone-group {
+            display: flex;
+            align-items: center;
+            background: rgba(15, 18, 25, 0.9);
+            border: 1px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .phone-prefix {
+            padding: 12px 10px;
+            background: #1a1e29;
+            color: #fff;
+            font-size: 13px;
+            font-weight: bold;
+            border-right: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+
+        .phone-group input {
+            border: none;
+            background: transparent;
+            padding: 12px;
+            margin: 0;
+            box-shadow: none !important;
+        }
+
         button {
             width: 100%;
             padding: 12px;
@@ -176,19 +207,15 @@
         
         <form id="authForm">
             <div id="regFields" class="hidden">
-                <div class="input-group">
-                    <i class="fa-solid fa-user"></i>
-                    <input type="text" id="fullName" placeholder="আপনার পুরো নাম">
-                </div>
-                <div class="input-group">
-                    <i class="fa-solid fa-phone"></i>
-                    <input type="text" id="phone" placeholder="ফোন নম্বর (বিকাশ/নগদ)">
+                <div class="phone-group">
+                    <div class="phone-prefix">🇧🇩 +880</div>
+                    <input type="text" id="phone" placeholder="17xxxxxxxx" maxlength="10">
                 </div>
             </div>
 
             <div class="input-group">
                 <i class="fa-solid fa-at"></i>
-                <input type="text" id="username" placeholder="ইউজারনেম (Username)" required>
+                <input type="text" id="username" placeholder="ইউজারনেম (শুধু অক্ষর ও সংখ্যা)" required>
             </div>
             <div class="input-group">
                 <i class="fa-solid fa-lock"></i>
@@ -202,16 +229,8 @@
             নতুন একাউন্ট নেই? রেজিস্টার করুন
         </p>
 
-        <div class="social-login">
-            <span style="font-size: 11px; color: #777;">অন্যান্য মাধ্যমে কানেক্ট করুন</span>
-            <div class="social-icons">
-                <div class="social-btn google" onclick="alert('Google Auth coming soon!')"><i class="fa-brands fa-google"></i></div>
-                <div class="social-btn facebook" onclick="alert('Facebook Auth coming soon!')"><i class="fa-brands fa-facebook-f"></i></div>
-            </div>
-        </div>
-
         <div class="rules-box">
-            🛡️ <b>সিকিউরিটি:</b> নিষ্ক্রিয় একাউন্ট ও চ্যাট হিস্ট্রি ৩ দিন পর সার্ভার থেকে স্বয়ংক্রিয়ভাবে মুছে যায়।
+            🛡️ <b>সিকিউরিটি:</b> সঠিক ইউজারনেম ও ১১ ডিজিটের বাংলাদেশি নাম্বার দিয়ে একাউন্ট করুন। ৩ দিন পর নিষ্ক্রিয় একাউন্ট স্বয়ংক্রিয়ভাবে মুছে যায়।
         </div>
     </div>
 
@@ -219,7 +238,7 @@
     <div id="mainApp" class="box hidden" style="max-width: 500px;">
         <h1 class="header-title">🔥 FF MARKETPLACE</h1>
         <div class="profile-badge">
-            👤 <span id="profileName"></span> | 🆔 ID: <span id="profileId"></span>
+            👤 Username: <span id="profileName"></span> | 🆔 ID: <span id="profileId"></span>
         </div>
 
         <div class="nav-buttons">
@@ -286,7 +305,6 @@
 
             const payload = { username, password };
             if (isRegisterMode) {
-                payload.fullName = document.getElementById('fullName').value;
                 payload.phone = document.getElementById('phone').value;
             }
 
@@ -299,8 +317,8 @@
             alert(data.message);
 
             if (data.success) {
-                currentUser = { username: data.username, customId: data.customId, fullName: data.fullName };
-                document.getElementById('profileName').innerText = currentUser.fullName || currentUser.username;
+                currentUser = { username: data.username, customId: data.customId };
+                document.getElementById('profileName').innerText = currentUser.username;
                 document.getElementById('profileId').innerText = currentUser.customId;
 
                 document.getElementById('authContainer').classList.add('hidden');
@@ -365,7 +383,7 @@
             loadMessages();
         }
 
-        // INSTANT SELL CLICK (Just like Buy, opens chat & notifies Admin)
+        // INSTANT SELL CLICK
         async function instantSell() {
             if (!currentUser) return;
             document.getElementById('chatPopup').style.display = 'block';
