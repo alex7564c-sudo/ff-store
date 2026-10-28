@@ -53,7 +53,7 @@
         .input-group { position: relative; margin: 10px 0; }
         .input-group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #888; }
 
-        input, textarea {
+        input {
             width: 100%;
             padding: 12px 12px 12px 38px;
             border-radius: 8px;
@@ -65,9 +65,7 @@
             transition: 0.3s;
         }
 
-        textarea { padding-left: 12px; resize: none; height: 70px; }
-
-        input:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 8px var(--primary-glow); }
+        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 8px var(--primary-glow); }
 
         button {
             width: 100%;
@@ -102,8 +100,22 @@
             padding: 8px;
             border-radius: 8px;
             font-weight: bold;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             font-size: 13px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .nav-buttons button {
+            background: #3742fa;
+            box-shadow: 0 4px 12px rgba(55, 66, 250, 0.3);
+            margin: 0;
+            font-size: 13px;
+            padding: 10px;
         }
 
         /* Product Cards Grid */
@@ -123,7 +135,7 @@
         .badge-available { background: #2ed573; color: black; }
         .badge-sold { background: #ff4757; color: white; }
 
-        /* Floating Chat Bubble with Sell Form Tab */
+        /* Floating Chat Bubble Widget */
         .chat-bubble-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; text-align: right; }
         .chat-bubble-btn {
             background: var(--primary);
@@ -150,11 +162,7 @@
         }
         .chat-popup-header { background: #1a1e29; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #333; }
         
-        .chat-tabs { display: flex; background: #12151d; border-bottom: 1px solid #333; }
-        .chat-tab-btn { flex: 1; padding: 8px; background: none; border: none; color: #aaa; font-size: 12px; font-weight: bold; cursor: pointer; margin: 0; box-shadow: none; }
-        .chat-tab-btn.active { color: var(--primary); border-bottom: 2px solid var(--primary); background: rgba(255,71,87,0.05); }
-
-        .chat-body-section { padding: 10px; height: 200px; overflow-y: auto; font-size: 12px; }
+        .chat-body-section { padding: 10px; height: 210px; overflow-y: auto; font-size: 12px; }
         .msg-user { color: #2ed573; margin: 5px 0; }
         .msg-robot { color: var(--primary); margin: 5px 0; font-weight: bold; }
     </style>
@@ -214,6 +222,10 @@
             👤 <span id="profileName"></span> | 🆔 ID: <span id="profileId"></span>
         </div>
 
+        <div class="nav-buttons">
+            <button onclick="instantSell()"><i class="fa-solid fa-tag"></i> Sell Your ID 🏷️</button>
+        </div>
+
         <button id="logoutBtn" style="background: #2f3542; margin-bottom: 15px; font-size: 12px; padding: 6px;">Log Out</button>
 
         <!-- STORE CATALOG -->
@@ -223,24 +235,9 @@
                 <p style="font-size: 12px; color: #888;">প্রোডাক্ট লোড হচ্ছে...</p>
             </div>
         </div>
-
-        <!-- BUY MODAL FORM -->
-        <div id="buySection" class="hidden" style="background: rgba(0,0,0,0.6); padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: left;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h3 style="color: #2ed573; font-size: 14px; margin:0;">Buy Account Order Form</h3>
-                <i class="fa-solid fa-xmark" style="cursor:pointer; color:#aaa;" onclick="document.getElementById('buySection').classList.add('hidden')"></i>
-            </div>
-            <form id="buyForm" style="margin-top:8px;">
-                <input type="text" id="selectedId" placeholder="Selected ID Code" required readonly style="background:#222; margin-bottom:8px;">
-                <input type="text" id="buyerNumber" placeholder="আপনার মোবাইল নম্বর" required style="margin-bottom:8px;">
-                <input type="text" id="cashoutNumber" placeholder="ক্যাশআউট নম্বর (বিকাশ/নগদ)" required style="margin-bottom:8px;">
-                <input type="text" id="trxId" placeholder="ট্রানজেকশন আইডি (TrxID)" required style="margin-bottom:8px;">
-                <button type="submit" style="background: #2ed573; margin-top:0;">অনুরোধ পাঠান</button>
-            </form>
-        </div>
     </div>
 
-    <!-- FLOATING CHAT WIDGET WITH INTEGRATED SELL FORM -->
+    <!-- FLOATING CHAT WIDGET (ROBOT) -->
     <div id="floatingChatContainer" class="chat-bubble-container hidden">
         <div class="chat-popup-window" id="chatPopup">
             <div class="chat-popup-header">
@@ -251,38 +248,21 @@
                 <i class="fa-solid fa-xmark" style="cursor: pointer; color: #aaa;" onclick="toggleChatPopup()"></i>
             </div>
 
-            <!-- CHAT TABS (Live Chat vs Sell ID Form) -->
-            <div class="chat-tabs">
-                <button class="chat-tab-btn active" id="tabChatBtn" onclick="switchTab('chat')">Live Chat</button>
-                <button class="chat-tab-btn" id="tabSellBtn" onclick="switchTab('sell')">Sell Your ID 🏷️</button>
-            </div>
-
-            <!-- TAB 1: LIVE CHAT -->
-            <div id="chatBodyTab" class="chat-body-section">
-                <div class="chat-box" id="chatDisplay" style="height: 160px; overflow-y: auto;">
-                    <div class="msg-robot">Robot: হ্যালো! যেকোনো সাহায্য বা পেমেন্ট নিয়ে কথা বলতে এখানে মেসেজ দিন।</div>
+            <!-- LIVE CHAT BODY -->
+            <div class="chat-body-section">
+                <div class="chat-box" id="chatDisplay" style="height: 165px; overflow-y: auto;">
+                    <div class="msg-robot">Robot: হ্যালো! যেকোনো আইডি কিনতে বা বিক্রি করতে ওপরের অপশনগুলোতে ক্লিক করুন।</div>
                 </div>
                 <div style="display: flex; gap: 5px; margin-top: 8px;">
                     <input type="text" id="chatInput" placeholder="মেসেজ লিখুন..." style="margin: 0; padding: 8px; font-size: 12px;">
                     <button id="sendChatBtn" style="width: 50px; margin: 0; padding: 8px;"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
-
-            <!-- TAB 2: SELL ID FORM INSIDE CHAT -->
-            <div id="sellBodyTab" class="chat-body-section hidden" style="height: 205px; overflow-y: auto;">
-                <p style="font-size: 11px; color: #aaa; margin: 2px 0 8px 0;">আপনার আইডি বিক্রির তথ্য নিচে দিন। এটি সরাসরি অ্যাডমিনের কাছে চলে যাবে।</p>
-                <form id="sellFormInsideChat">
-                    <input type="text" id="sellerEmail" placeholder="আইডির জিমেইল / ফোন নম্বর" required style="margin-bottom:6px; padding:8px; font-size:12px;">
-                    <input type="password" id="sellerPassword" placeholder="আইডির পাসওয়ার্ড" required style="margin-bottom:6px; padding:8px; font-size:12px;">
-                    <input type="number" id="sellPrice" placeholder="বিক্রয় মূল্য (BDT)" required style="margin-bottom:6px; padding:8px; font-size:12px;">
-                    <button type="submit" style="background: #3742fa; margin-top:0; padding:8px; font-size:13px;">আইডি জমা দিন</button>
-                </form>
-            </div>
         </div>
 
         <button class="chat-bubble-btn" onclick="toggleChatPopup()">
             <img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png" alt="Robot">
-            <span>Robot / Chat & Sell</span>
+            <span>Robot / Chat</span>
         </button>
     </div>
 
@@ -360,72 +340,47 @@
                         <h4 style="margin: 0 0 5px 0;">${p.title}</h4>
                         <div class="product-price">Price: ${p.price}</div>
                         <div style="font-size: 11px; color: #888; margin-top:2px;">Code: ${p.id}</div>
-                        ${p.status === 'AVAILABLE' ? `<button onclick="initiateBuy('${p.title} (${p.id})')" style="margin-top:8px; padding:8px; font-size:12px;">Buy Now</button>` : ''}
+                        ${p.status === 'AVAILABLE' ? `<button onclick="instantBuy('${p.id}', '${p.title}', '${p.price}')" style="margin-top:8px; padding:8px; font-size:12px;">Buy Now</button>` : ''}
                     </div>
                 `;
                 container.appendChild(card);
             });
         }
 
-        function initiateBuy(prodTitle) {
-            document.getElementById('selectedId').value = prodTitle;
-            document.getElementById('buySection').classList.remove('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+        // INSTANT BUY CLICK
+        async function instantBuy(productId, productTitle, productPrice) {
+            if (!currentUser) return;
+            document.getElementById('chatPopup').style.display = 'block';
+
+            await fetch('/api/autobuy', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    productId: productId,
+                    productTitle: productTitle,
+                    productPrice: productPrice,
+                    customId: currentUser.customId
+                })
+            });
+            loadMessages();
         }
 
-        document.getElementById('buyForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = {
-                selectedId: document.getElementById('selectedId').value,
-                buyerNumber: document.getElementById('buyerNumber').value,
-                cashoutNumber: document.getElementById('cashoutNumber').value,
-                trxId: document.getElementById('trxId').value,
-                customId: currentUser.customId
-            };
-            const res = await fetch('/api/buy', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
-            const result = await res.json();
-            alert(result.message);
-            document.getElementById('buySection').classList.add('hidden');
-        });
+        // INSTANT SELL CLICK (Just like Buy, opens chat & notifies Admin)
+        async function instantSell() {
+            if (!currentUser) return;
+            document.getElementById('chatPopup').style.display = 'block';
 
-        // Sell ID inside Chat Widget Tab
-        document.getElementById('sellFormInsideChat').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = {
-                sellerEmail: document.getElementById('sellerEmail').value,
-                sellerPassword: document.getElementById('sellerPassword').value,
-                price: document.getElementById('sellPrice').value,
-                customId: currentUser.customId
-            };
-            const res = await fetch('/api/sell', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
-            const result = await res.json();
-            alert(result.message);
-            document.getElementById('sellFormInsideChat').reset();
-            switchTab('chat'); // Switch back to live chat
-        });
+            await fetch('/api/autosell', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ customId: currentUser.customId })
+            });
+            loadMessages();
+        }
 
         function toggleChatPopup() {
             const popup = document.getElementById('chatPopup');
             popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
-        }
-
-        function switchTab(tabName) {
-            const chatTab = document.getElementById('chatBodyTab');
-            const sellTab = document.getElementById('sellBodyTab');
-            const chatBtn = document.getElementById('tabChatBtn');
-            const sellBtn = document.getElementById('tabSellBtn');
-
-            if (tabName === 'chat') {
-                chatTab.classList.remove('hidden');
-                sellTab.classList.add('hidden');
-                chatBtn.classList.add('active');
-                sellBtn.classList.remove('active');
-            } else {
-                chatTab.classList.add('hidden');
-                sellTab.classList.remove('hidden');
-                chatBtn.classList.remove('active');
-                sellBtn.classList.add('active');
-            }
         }
 
         document.getElementById('sendChatBtn').addEventListener('click', async () => {
@@ -446,7 +401,7 @@
             const res = await fetch(`/api/messages/${currentUser.customId}`);
             const messages = await res.json();
             const chatDisplay = document.getElementById('chatDisplay');
-            chatDisplay.innerHTML = '<div class="msg-robot">Robot: হ্যালো! যেকোনো সাহায্য বা পেমেন্ট নিয়ে কথা বলতে এখানে মেসেজ দিন।</div>';
+            chatDisplay.innerHTML = '<div class="msg-robot">Robot: হ্যালো! যেকোনো আইডি কিনতে বা বিক্রি করতে ওপরের অপশনগুলোতে ক্লিক করুন।</div>';
             messages.forEach(m => {
                 const div = document.createElement('div');
                 div.className = m.sender === 'Robot' ? 'msg-robot' : 'msg-user';
