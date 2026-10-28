@@ -12,7 +12,7 @@
             --primary-glow: rgba(255, 71, 87, 0.4);
             --accent: #ffa502;
             --bg-dark: #0a0c10;
-            --card-bg: rgba(20, 24, 33, 0.85);
+            --card-bg: rgba(20, 24, 33, 0.88);
             --text-color: #ffffff;
         }
 
@@ -175,7 +175,7 @@
             box-shadow: 0 4px 12px rgba(55, 66, 250, 0.3);
         }
 
-        /* Product Cards Grid */
+        /* Product Catalog Grid */
         .catalog-title {
             color: var(--accent);
             font-size: 18px;
@@ -184,17 +184,18 @@
         }
 
         .product-card {
-            background: rgba(12, 15, 22, 0.9);
+            background: rgba(12, 15, 22, 0.95);
             border: 1px solid #2a3243;
             border-radius: 10px;
             overflow: hidden;
             margin-bottom: 15px;
             text-align: left;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
 
         .product-card img {
             width: 100%;
-            height: 180px;
+            height: 190px;
             object-fit: cover;
         }
 
@@ -220,36 +221,75 @@
         .badge-available { background: #2ed573; color: black; }
         .badge-sold { background: #ff4757; color: white; }
 
-        /* Chat UI */
-        .chat-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 8px;
-            margin-bottom: 10px;
+        /* Floating Chat Bubble Widget */
+        .chat-bubble-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            text-align: right;
         }
 
-        .robot-avatar {
-            width: 36px;
-            height: 36px;
+        .chat-bubble-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 10px 18px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(255, 71, 87, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.3s;
+        }
+
+        .chat-bubble-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .chat-bubble-btn img {
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
-            border: 2px solid var(--primary);
+            border: 1px solid #fff;
+        }
+
+        .chat-popup-window {
+            position: absolute;
+            bottom: 60px;
+            right: 0;
+            width: 320px;
+            background: rgba(15, 18, 25, 0.95);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--primary);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            overflow: hidden;
+            display: none;
+            text-align: left;
+        }
+
+        .chat-popup-header {
+            background: #1a1e29;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #333;
         }
 
         .chat-box {
-            background: #0d1017;
             padding: 10px;
-            border-radius: 8px;
-            height: 160px;
+            height: 220px;
             overflow-y: auto;
-            text-align: left;
             font-size: 13px;
-            border: 1px solid #222;
         }
 
         .msg-user { color: #2ed573; margin: 6px 0; }
-        .msg-robot { color: #ff4757; margin: 6px 0; font-weight: bold; }
+        .msg-robot { color: var(--primary); margin: 6px 0; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -301,7 +341,7 @@
     </div>
 
     <!-- MAIN APP SECTION -->
-    <div id="mainApp" class="box hidden">
+    <div id="mainApp" class="box hidden" style="max-width: 500px;">
         <h1 class="header-title">🔥 FF MARKETPLACE</h1>
         <div class="profile-badge">
             👤 <span id="profileName"></span> | 🆔 ID: <span id="profileId"></span>
@@ -314,16 +354,16 @@
 
         <button id="logoutBtn" style="background: #2f3542; margin-bottom: 15px; font-size: 12px; padding: 6px;">Log Out</button>
 
-        <!-- STORE CATALOG SECTION -->
+        <!-- STORE CATALOG SECTION (Multiple Products Grid) -->
         <div id="storeSection">
-            <div class="catalog-title"><i class="fa-solid fa-fire"></i> Available Accounts</div>
+            <div class="catalog-title"><i class="fa-solid fa-fire"></i> Available Accounts Catalog</div>
             <div id="productContainer">
                 <p style="font-size: 12px; color: #888;">প্রোডাক্ট লোড হচ্ছে...</p>
             </div>
         </div>
 
         <!-- BUY MODAL / FORM SECTION -->
-        <div id="buySection" class="hidden" style="background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+        <div id="buySection" class="hidden" style="background: rgba(0,0,0,0.5); padding: 12px; border-radius: 8px; margin-bottom: 15px;">
             <h3 style="color: #2ed573;">Buy Account Order Form</h3>
             <form id="buyForm">
                 <input type="text" id="selectedId" placeholder="Selected ID Code" required readonly style="background:#222;">
@@ -335,7 +375,7 @@
         </div>
 
         <!-- SELL SECTION -->
-        <div id="sellSection" class="hidden" style="background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+        <div id="sellSection" class="hidden" style="background: rgba(0,0,0,0.5); padding: 12px; border-radius: 8px; margin-bottom: 15px;">
             <h3 style="color: #3742fa;">Sell Your Free Fire ID</h3>
             <form id="sellForm">
                 <input type="text" id="sellerEmail" placeholder="আইডির ইমেইল / ফোন নম্বর" required>
@@ -344,21 +384,30 @@
                 <button type="submit" style="background: #3742fa;">আইডি জমা দিন</button>
             </form>
         </div>
+    </div>
 
-        <!-- LIVE CHAT WITH ROBOT -->
-        <div style="margin-top: 20px;">
-            <div class="chat-header">
-                <img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png" class="robot-avatar" alt="Robot Logo">
-                <h4 style="margin: 0; color: var(--primary);">Live Assistant: Robot</h4>
+    <!-- FLOATING CHAT BUBBLE WIDGET (ROBOT) -->
+    <div id="floatingChatContainer" class="chat-bubble-container hidden">
+        <div class="chat-popup-window" id="chatPopup">
+            <div class="chat-popup-header">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png" style="width: 24px; height: 24px; border-radius: 50%;">
+                    <b style="font-size: 13px; color: #fff;">Robot (Live Chat)</b>
+                </div>
+                <i class="fa-solid fa-xmark" style="cursor: pointer; color: #aaa;" onclick="toggleChatPopup()"></i>
             </div>
             <div class="chat-box" id="chatDisplay">
                 <div class="msg-robot">Robot: হ্যালো! যেকোনো আইডি কেনাবেচা বা তথ্যের জন্য এখানে মেসেজ দিন।</div>
             </div>
-            <div style="display: flex; gap: 5px; margin-top: 8px;">
-                <input type="text" id="chatInput" placeholder="Robot কে মেসেজ লিখুন..." style="margin: 0;">
-                <button id="sendChatBtn" style="width: 80px; margin: 0;"><i class="fa-solid fa-paper-plane"></i></button>
+            <div style="display: flex; gap: 5px; padding: 8px; background: #12151d; border-top: 1px solid #333;">
+                <input type="text" id="chatInput" placeholder="মেসেজ লিখুন..." style="margin: 0; padding: 8px; font-size: 12px;">
+                <button id="sendChatBtn" style="width: 50px; margin: 0; padding: 8px;"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
         </div>
+        <button class="chat-bubble-btn" onclick="toggleChatPopup()">
+            <img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png" alt="Robot">
+            <span>Robot / Chat</span>
+        </button>
     </div>
 
     <script>
@@ -400,6 +449,7 @@
 
                 document.getElementById('authContainer').classList.add('hidden');
                 document.getElementById('mainApp').classList.remove('hidden');
+                document.getElementById('floatingChatContainer').classList.remove('hidden');
 
                 loadProducts();
                 setInterval(loadMessages, 3000);
@@ -409,6 +459,8 @@
         document.getElementById('logoutBtn').addEventListener('click', () => {
             currentUser = null;
             document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('authContainer').classList.add('hidden');
+            document.getElementById('floatingChatContainer').classList.add('hidden');
             document.getElementById('authContainer').classList.remove('hidden');
         });
 
@@ -440,7 +492,8 @@
                         <span class="badge-status ${p.status === 'AVAILABLE' ? 'badge-available' : 'badge-sold'}">${p.status}</span>
                         <h4 style="margin: 0 0 5px 0;">${p.title}</h4>
                         <div class="product-price">Price: ${p.price}</div>
-                        ${p.status === 'AVAILABLE' ? `<button onclick="initiateBuy('${p.title}')" style="margin-top:8px; padding:8px; font-size:12px;">Buy Now</button>` : ''}
+                        <div style="font-size: 11px; color: #888; margin-top:2px;">Code: ${p.id}</div>
+                        ${p.status === 'AVAILABLE' ? `<button onclick="initiateBuy('${p.title} (${p.id})')" style="margin-top:8px; padding:8px; font-size:12px;">Buy Now</button>` : ''}
                     </div>
                 `;
                 container.appendChild(card);
@@ -480,6 +533,11 @@
             alert(result.message);
             showSection('storeSection');
         });
+
+        function toggleChatPopup() {
+            const popup = document.getElementById('chatPopup');
+            popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
+        }
 
         document.getElementById('sendChatBtn').addEventListener('click', async () => {
             const input = document.getElementById('chatInput');
