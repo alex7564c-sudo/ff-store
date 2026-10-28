@@ -55,18 +55,30 @@ setInterval(() => {
     }
 }, 60 * 60 * 1000);
 
-/* ================= AUTHENTICATION ================= */
+/* ================= AUTHENTICATION & VALIDATION ================= */
 
 app.post('/api/register', (req, res) => {
-    const { fullName, username, phone, password } = req.body;
+    const { username, phone, password } = req.body;
     
-    if (!fullName || !username || !phone || !password) {
-        return res.json({ success: false, message: 'সবগুলো তথ্য সঠিকভাবে পুরন করুন!' });
+    if (!username || !phone || !password) {
+        return res.json({ success: false, message: 'সবগুলো তথ্য সঠিকভাবে পূরণ করুন!' });
+    }
+
+    // Username Validation: Alphanumeric only (No special chars/spaces)
+    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+    if (!usernameRegex.test(username)) {
+        return res.json({ success: false, message: 'ইউজারনেমে শুধু ইংরেজি অক্ষর ও সংখ্যা ব্যবহার করুন (স্পেশাল ক্যারেক্টার বা হ্যাশ/ড্যাশ গ্রহণযোগ্য নয়)!' });
+    }
+
+    // Bangladeshi Phone Validation: Must start with 01 and be exactly 11 digits
+    const phoneRegex = /^01[3-9]\d{8}$/;
+    if (!phoneRegex.test(phone)) {
+        return res.json({ success: false, message: 'সঠিক ১১ ডিজিটের বাংলাদেশি মোবাইল নম্বর দিন (যেমন: 017xxxxxxxx)!' });
     }
 
     const existingUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
     if (existingUser) {
-        return res.json({ success: false, message: 'এই ইউজারনেমটি দিয়ে অলরেডি একাউন্ট খোলা আছে!' });
+        return res.json({ success: false, message: 'এই ইউজারনেমটি দিয়ে ইতিমধ্যে একটি অ্যাকাউন্ট খোলা আছে!' });
     }
 
     let customId;
@@ -74,14 +86,15 @@ app.post('/api/register', (req, res) => {
         customId = Math.floor(1000 + Math.random() * 9000).toString();
     } while (users.some(u => u.customId === customId));
 
-    const newUser = { fullName, username, phone, password, customId, createdAt: Date.now() };
+    const fullPhone = '+880' + phone;
+    const newUser = { username, phone: fullPhone, password, customId, createdAt: Date.now() };
     users.push(newUser);
     chatMessages[customId] = [];
 
     saveData(USERS_FILE, users);
     saveData(CHATS_FILE, chatMessages);
 
-    res.json({ success: true, message: `রেজিস্ট্রেশন সফল! আইডি: ${customId}`, customId, username, fullName });
+    res.json({ success: true, message: `রেজিস্ট্রেশন সফল! আপনার ইউজার আইডি: ${customId}`, customId, username });
 });
 
 app.post('/api/login', (req, res) => {
@@ -89,26 +102,25 @@ app.post('/api/login', (req, res) => {
     const user = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
     
     if (user) {
-        res.json({ success: true, message: 'লগইন সফল!', customId: user.customId, username: user.username, fullName: user.fullName });
+        res.json({ success: true, message: 'লগইন সফল হয়েছে!', customId: user.customId, username: user.username });
     } else {
-        res.json({ success: false, message: 'ইউজারনেম অথবা পাসওয়ার্ড ভুল!' });
+        res.json({ success: false, message: 'ইউজারনেম অথবা পাসওয়ার্ড ভুল হয়েছে!' });
     }
 });
 
-/* ================= PRODUCTS & AUTO ACTIONS API ================= */
+/* ================= PRODUCTS & ACTION APIS ================= */
 
 app.get('/api/products', (req, res) => {
     res.json(products);
 });
 
-// Auto Buy Click
+// Instant Buy Click
 app.post('/api/autobuy', (req, res) => {
     const { productId, productTitle, productPrice, customId } = req.body;
     const user = users.find(u => u.customId === customId);
-    const nameStr = user ? user.fullName : 'N/A';
     const usernameStr = user ? user.username : 'N/A';
 
-    const message = `🛒 *Instant Buy Clicked!*\n\nName : ${nameStr}\nUsername : ${usernameStr}\nUser ID : ${customId}\n🎮 Item : ${productTitle}\n💰 Price : ${productPrice}\n🔢 Code : \`${productId}\``;
+    const message = `🛒 *Instant Buy Request!*\n\nUsername : ${usernameStr}\nUser ID : ${customId}\n🎮 Item : ${productTitle}\n💰 Price : ${productPrice}\n🔢 Code : \`${productId}\``;
     bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
 
     if (!chatMessages[customId]) chatMessages[customId] = [];
@@ -119,14 +131,13 @@ app.post('/api/autobuy', (req, res) => {
     res.json({ success: true, message: 'Order sent!' });
 });
 
-// Auto Sell Click (Just like Buy, instant Telegram notification & Chat open)
+// Instant Sell Click
 app.post('/api/autosell', (req, res) => {
     const { customId } = req.body;
     const user = users.find(u => u.customId === customId);
-    const nameStr = user ? user.fullName : 'N/A';
     const usernameStr = user ? user.username : 'N/A';
 
-    const message = `📤 *New ID Sell Request Clicked!*\n\nName : ${nameStr}\nUsername : ${usernameStr}\nUser ID : ${customId}\n📝 Status : User wants to sell an account. Chat opened!`;
+    const message = `📤 *New ID Sell Request Clicked!*\n\nUsername : ${usernameStr}\nUser ID : ${customId}\n📝 Status : User wants to sell an account. Chat opened!`;
     bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
 
     if (!chatMessages[customId]) chatMessages[customId] = [];
@@ -149,13 +160,12 @@ app.post('/api/chat', (req, res) => {
     if (!chatMessages[customId]) chatMessages[customId] = [];
 
     const user = users.find(u => u.customId === customId);
-    const fullName = user ? user.fullName : (username || 'User');
     const uName = user ? user.username : (username || 'N/A');
 
-    chatMessages[customId].push({ sender: fullName, message, time: new Date().toLocaleTimeString() });
+    chatMessages[customId].push({ sender: uName, message, time: new Date().toLocaleTimeString() });
     saveData(CHATS_FILE, chatMessages);
 
-    const tgMessage = `Name : ${fullName}\nUsername : ${uName}\nUser ID : ${customId}\nText : ${message}`;
+    const tgMessage = `Username : ${uName}\nUser ID : ${customId}\nText : ${message}`;
     bot.sendMessage(chatId, tgMessage);
 
     res.json({ success: true });
