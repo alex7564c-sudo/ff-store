@@ -1,6 +1,7 @@
 const express = require('express');
 const TelegramBot = require('node-telegram-bot-api');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 app.use(express.json());
@@ -12,22 +13,47 @@ const token = '8379623803:AAGkXj3HikDkQkX1YMV7PGwH9ifwAnwJPg8';
 const chatId = '6782089696';
 const bot = new TelegramBot(token, { polling: true });
 
-// Data Stores (In-Memory)
-let users = [];         // { fullName, username, phone, password, customId, createdAt }
-let products = [];      // { id, title, price, imageUrl, status, createdAt }
-let chatMessages = {};  // customId -> array of { sender, message, time }
+// File Paths for Data Persistence
+const USERS_FILE = path.join(__dirname, 'users.json');
+const PRODUCTS_FILE = path.join(__dirname, 'products.json');
+const CHATS_FILE = path.join(__dirname, 'chats.json');
+
+// Helper Functions to Load/Save JSON Data
+function loadData(filePath, defaultVal) {
+    if (fs.existsSync(filePath)) {
+        try {
+            return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        } catch (e) {
+            return defaultVal;
+        }
+    }
+    return defaultVal;
+}
+
+function saveData(filePath, data) {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+}
+
+let users = loadData(USERS_FILE, []);
+let products = loadData(PRODUCTS_FILE, []);
+let chatMessages = loadData(CHATS_FILE, {});
 
 // Auto Cleanup Routine (Deletes accounts & chats older than 3 days)
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 setInterval(() => {
     const now = Date.now();
+    const initialLen = users.length;
     users = users.filter(user => {
-        const isExpired = (now - user.createdAt) > THREE_DAYS_MS;
+        const isExpired = (now - (user.createdAt || now)) > THREE_DAYS_MS;
         if (isExpired) {
             delete chatMessages[user.customId];
         }
         return !isExpired;
     });
+    if (users.length !== initialLen) {
+        saveData(USERS_FILE, users);
+        saveData(CHATS_FILE, chatMessages);
+    }
 }, 60 * 60 * 1000); // Check every hour
 
 /* =========================================
@@ -62,6 +88,9 @@ app.post('/api/register', (req, res) => {
 
     users.push(newUser);
     chatMessages[customId] = [];
+
+    saveData(USERS_FILE, users);
+    saveData(CHATS_FILE, chatMessages);
 
     res.json({
         success: true,
@@ -120,7 +149,7 @@ app.post('/api/sell', (req, res) => {
 });
 
 /* =========================================
-   LIVE CHAT SYSTEM API (UPDATED TELEGRAM FORMAT)
+   LIVE CHAT SYSTEM API
    ========================================= */
 
 app.get('/api/messages/:customId', (req, res) => {
@@ -132,14 +161,13 @@ app.post('/api/chat', (req, res) => {
     const { customId, username, message } = req.body;
     if (!chatMessages[customId]) chatMessages[customId] = [];
 
-    // Find full user details from memory
     const user = users.find(u => u.customId === customId);
     const fullName = user ? user.fullName : (username || 'User');
     const uName = user ? user.username : (username || 'N/A');
 
     chatMessages[customId].push({ sender: fullName, message, time: new Date().toLocaleTimeString() });
+    saveData(CHATS_FILE, chatMessages);
 
-    // Telegram Notification Format as requested
     const tgMessage = `Name : ${fullName}\nUsername : ${uName}\nUser ID : ${customId}\nText : ${message}`;
     bot.sendMessage(chatId, tgMessage);
 
@@ -179,6 +207,8 @@ bot.on('message', async (msg) => {
         };
 
         products.unshift(newProd);
+        saveData(PRODUCTS_FILE, products);
+
         bot.sendMessage(chatId, `✅ *Product Added Successfully!*\n\n🏷️ *ID:* ${newProd.title}\n💰 *Price:* ${newProd.price}\n🔢 *Code:* \`${newProd.id}\``, { parse_mode: 'Markdown' });
         return;
     }
@@ -189,6 +219,7 @@ bot.on('message', async (msg) => {
         const prod = products.find(p => p.id.toLowerCase() === query || p.title.toLowerCase().includes(query));
         if (prod) {
             prod.status = 'SOLD OUT';
+            saveData(PRODUCTS_FILE, products);
             bot.sendMessage(chatId, `❌ Product Marked as *SOLD OUT*: ${prod.title}`, { parse_mode: 'Markdown' });
         } else {
             bot.sendMessage(chatId, `⚠️ Product not found matching "${query}"`);
@@ -202,6 +233,7 @@ bot.on('message', async (msg) => {
         const initialLen = products.length;
         products = products.filter(p => p.id.toLowerCase() !== query && !p.title.toLowerCase().includes(query));
         if (products.length < initialLen) {
+            saveData(PRODUCTS_FILE, products);
             bot.sendMessage(chatId, `🗑️ Product deleted matching "${query}"`);
         } else {
             bot.sendMessage(chatId, `⚠️ Product not found matching "${query}"`);
@@ -232,6 +264,7 @@ bot.on('message', async (msg) => {
         if (targetId && replyText) {
             if (!chatMessages[targetId]) chatMessages[targetId] = [];
             chatMessages[targetId].push({ sender: 'Robot', message: replyText, time: new Date().toLocaleTimeString() });
+            saveData(CHATS_FILE, chatMessages);
             bot.sendMessage(chatId, `✅ Message delivered to User ID \`${targetId}\`!`, { parse_mode: 'Markdown' });
         } else {
             bot.sendMessage(chatId, `⚠️ Format Error! Use: \`/ID message\` (e.g., \`/0987 Hello\`)`, { parse_mode: 'Markdown' });
